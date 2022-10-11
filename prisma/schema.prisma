@@ -1,0 +1,59 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Class {
+  id       Int       @id @default(autoincrement())
+  name     String
+  pupils   Pupil[]
+  teachers Teacher[]
+}
+
+model Pupil {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  password  String
+  image     String
+  score     Int
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  classId   Int
+  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  teacherId Int
+  Scores    Scores[]
+}
+
+model Teacher {
+  id        Int        @id @default(autoincrement())
+  name      String
+  email     String
+  password  String
+  image     String
+  class     Class      @relation(fields: [classId], references: [id])
+  classId   Int
+  pupils    Pupil[]
+  exercises Exercise[]
+}
+
+model Exercise {
+  id        Int     @id @default(autoincrement())
+  exercise  String
+  answer    String
+  teacher   Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  teacherId Int
+}
+
+model Scores {
+  id      Int   @id @default(autoincrement())
+  score   Int   @default(0)
+  pupil   Pupil @relation(fields: [pupilId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  pupilId Int
+}
