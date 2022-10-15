@@ -20,7 +20,7 @@ model Class {
 model Pupil {
   id        Int      @id @default(autoincrement())
   name      String
-  email     String @unique
+  email     String   @unique
   password  String
   image     String
   score     Int
@@ -34,7 +34,7 @@ model Pupil {
 model Teacher {
   id        Int        @id @default(autoincrement())
   name      String
-  email     String @unique
+  email     String     @unique
   password  String
   image     String
   class     Class      @relation(fields: [classId], references: [id])
@@ -44,22 +44,25 @@ model Teacher {
 }
 
 model Exercise {
-  id           Int            @id @default(autoincrement())
+  id           Int      @id @default(autoincrement())
   exercise     String
   answer       String
-  time         DateTime       @default(now())
-  teacher      Teacher        @relation(fields: [teacherId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  alternative1 String 
+  alternative2 String 
+  alternative3 String 
+  alternative4 String 
+  time         DateTime @default(now())
+  teacher      Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   teacherId    Int
-  alternatives Alternatives[]
 }
 
-model Alternatives {
-  id          Int      @id @default(autoincrement())
-  alternative String
-  exercise    Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+// model Alternatives {
+//   id          Int      @id @default(autoincrement())
+//   alternative String
+//   exercise    Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
-  exerciseId Int
-}
+//   exerciseId Int
+// }
 
 model Scores {
   id      Int   @id @default(autoincrement())
