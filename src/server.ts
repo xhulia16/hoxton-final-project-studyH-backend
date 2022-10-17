@@ -35,41 +35,63 @@ async function getCurrentTeacher(token: string) {
 
 
 app.get("/class/:id", async (req, res) => {
-  const id=Number(req.params.id)
-  const classes = await prisma.class.findMany(
-    { where: {id},
-      select: {
-        teachers: {
-          select:
-          {
-            exercises: {
-              select: {
-                exercise: true,
-                alternative1: true,
-                alternative2: true,
-                alternative3: true,
-                alternative4: true,
-                time: true,
-              }
-            },
-            image: true,
-            name: true,
+  const id = Number(req.params.id)
+  const userClass = await prisma.class.findUnique({
+    where: { id },
+    include: {
+      exercises: {
+        select: {
+          alternative1: true, alternative2: true, alternative3: true, alternative4: true,
+          exercise: true, id: true, answered:true, time:true, teacher: {
+            select: { name: true, image: true }
           }
-        },
-        pupils: { select: { id: true, image: true, name: true } }
-      }
-    })
-    res.send(classes)
+        }
+      }, pupils: { select: { name: true, image: true } }
+    }
+  })
+  res.send(userClass)
+
 })
 
+app.patch("/exercise/:id", async (req, res)=>{
+ const id=Number(req.params.id)
+ try{
+  const updatedExercise= await prisma.exercise.update({where: {id}, data: {
+    answered: true
+   }})
+
+   const classId= updatedExercise.classId
+
+   const userClass = await prisma.class.findUnique({
+    where: {id: classId},   
+     include: {
+      exercises: {
+        select: {
+          alternative1: true, alternative2: true, alternative3: true, alternative4: true,
+          exercise: true, id: true, answered:true, time:true, teacher: {
+            select: { name: true, image: true }
+          }
+        }
+      }, pupils: { select: { name: true, image: true } }
+    }
+  })
+
+   res.send(userClass)
+ }
+ catch (error) {
+  // @ts-ignore
+  res.status(400).send({ errors: [error.message] });
+}
+});
 
 app.post("/exercises", async (req, res) => {
-  const { exercise, answer, teacherId, alternative1, alternative2, alternative3, alternative4 } = req.body
+  const { exercise, answer, teacherId, alternative1, alternative2, alternative3, alternative4, classId } = req.body
   const newexercise = await prisma.exercise.create({
     data: {
       exercise: exercise,
       answer: answer,
       teacherId: teacherId,
+      classId: classId,
       alternative1: alternative1,
       alternative2: alternative2,
       alternative3: alternative3,
@@ -78,7 +100,6 @@ app.post("/exercises", async (req, res) => {
   })
   res.send(newexercise)
 })
-
 
 
 app.get("/scores-students", async (req, res) => {
@@ -161,7 +182,7 @@ app.post("/sign-in/teacher", async (req, res) => {
 app.post("/sign-in/pupil", async (req, res) => {
   try {
     const user = await prisma.pupil.findUnique({
-      where: { email: req.body.email },
+      where: { email: req.body.email }
     });
 
     if (user && bcrypt.compareSync(req.body.password, user.password)) {

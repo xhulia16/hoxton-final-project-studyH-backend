@@ -11,10 +11,11 @@ datasource db {
 }
 
 model Class {
-  id       Int       @id @default(autoincrement())
+  id       Int        @id @default(autoincrement())
   name     String
   pupils   Pupil[]
   teachers Teacher[]
+  exercises Exercise[]
 }
 
 model Pupil {
@@ -26,9 +27,7 @@ model Pupil {
   score     Int
   class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   classId   Int
-  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  teacherId Int
-  Scores    Scores[]
+  scores    Scores[]
 }
 
 model Teacher {
@@ -37,9 +36,8 @@ model Teacher {
   email     String     @unique
   password  String
   image     String
-  class     Class      @relation(fields: [classId], references: [id])
+  class     Class      @relation(fields: [classId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   classId   Int
-  pupils    Pupil[]
   exercises Exercise[]
 }
 
@@ -47,22 +45,17 @@ model Exercise {
   id           Int      @id @default(autoincrement())
   exercise     String
   answer       String
-  alternative1 String 
-  alternative2 String 
-  alternative3 String 
-  alternative4 String 
+  alternative1 String
+  alternative2 String
+  alternative3 String
+  alternative4 String
   time         DateTime @default(now())
   teacher      Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   teacherId    Int
+  class        Class    @relation(fields: [classId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  classId      Int
+  answered Boolean @default(false)
 }
-
-// model Alternatives {
-//   id          Int      @id @default(autoincrement())
-//   alternative String
-//   exercise    Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-//   exerciseId Int
-// }
 
 model Scores {
   id      Int   @id @default(autoincrement())
