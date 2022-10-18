@@ -69,7 +69,7 @@ model Answer {
   id         Int      @id @default(autoincrement())
   exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   pupil      Pupil    @relation(fields: [pupilId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  answer     String?
+  answer     String
   exerciseId Int
   pupilId    Int 
 }

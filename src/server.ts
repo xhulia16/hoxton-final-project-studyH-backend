@@ -33,13 +33,20 @@ async function getCurrentTeacher(token: string) {
   return user;
 }
 
+//find the class where the pupil belongs to
 
 app.get("/class/:id", async (req, res) => {
   const id = Number(req.params.id)
+  const pupil= await prisma.pupil.findUnique({where: {id}})
+  const classId= pupil?.classId
+
+  const userAnswers= await prisma.answer.findMany({where: {pupilId: id}, select: {exerciseId:true}})
+  const matches= userAnswers.map(item=> item.exerciseId)
+
   const userClass = await prisma.class.findUnique({
-    where: { id },
+    where: { id: classId },
     include: {
-      exercises: {
+      exercises:  { where:  {id: {notIn: matches}},
         select: {
           alternative1: true, alternative2: true, alternative3: true, alternative4: true,
           exercise: true, id: true,  time:true, teacher: {
@@ -122,42 +129,47 @@ app.post("/answers", async (req, res)=>{
     if(currentAnswer){
       res.status(400).send({ message: "You have already answered this exercise" });
     }
-    const userAnswer= await prisma.answer.create({
-      data:{
-        answer: answer,
-        exerciseId: exerciseId,
-        pupilId: pupilId
-      }
-    })
-
-    const userAnswers= await prisma.answer.findMany({where: {pupilId: pupilId}, select: {exerciseId}})
-    const matches= userAnswers.map(item=> item.exerciseId)
-    console.log(matches)
-//we need the exercises where the id of the user and the id of the exercise (userId, exerciseId) matches the answer ids
-    
-    const pupil= await prisma.pupil.findUnique({where: {id: pupilId}})
-    const classId= pupil?.classId
-
-    const userClass = await prisma.class.findUnique({
-      where: { id: classId },
-      include: {
-        exercises: { where:  {id: {notIn: matches}}, 
-          select: {
-            alternative1: true, alternative2: true, alternative3: true, alternative4: true,
-            exercise: true, id: true,  time:true, teacher: {
-              select: { name: true, image: true }
+    else{
+      const userAnswer= await prisma.answer.create({
+        data:{
+          answer: answer,
+          exerciseId: exerciseId,
+          pupilId: pupilId
+        }
+      })
+  
+      const userAnswers= await prisma.answer.findMany({where: {pupilId: pupilId}, select: {exerciseId:true}})
+      const matches= userAnswers.map(item=> item.exerciseId)
+      
+  //we need the exercises where the id of the user and the id of the exercise (userId, exerciseId) matches the answer ids
+      
+      const pupil= await prisma.pupil.findUnique({where: {id: pupilId}})
+      const classId= pupil?.classId
+  
+      const userClass = await prisma.class.findUnique({
+        where: { id: classId },
+        include: {
+          exercises: { where:  {id: {notIn: matches}}, 
+            select: {
+              alternative1: true, alternative2: true, alternative3: true, alternative4: true,
+              exercise: true, id: true,  time:true, teacher: {
+                select: { name: true, image: true }
+              }
             }
-          }
-        }, pupils: { select: { name: true, image: true } }
-      }
-    })
-    res.send(userClass)   
-  }
+          }, pupils: { select: { name: true, image: true } }
+        }
+      })
+      res.send(userClass)   
+    }
+    }
+    
   catch (error) {
     // @ts-ignore
     res.status(400).send({ errors: [error.message] });
   }
 });
+
+
 
 //change password for user
 
