@@ -60,6 +60,18 @@ app.get("/class/:id", async (req, res) => {
 
 })
 
+app.get("/answers/:id", async (req, res)=>{
+  try{
+    const id= Number(req.params.id)
+    const answers= await prisma.answer.findMany({where: {pupilId: id}, include:{exercise: {include: {teacher:{select: {name:true, image:true}}}}}})
+    res.send(answers)
+  }
+  catch (error) {
+    // @ts-ignore
+    res.status(400).send({ errors: [error.message] });
+  }
+});
+
 
 
 app.post("/exercises", async (req, res) => {
