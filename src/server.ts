@@ -42,7 +42,7 @@ app.get("/class/:id", async (req, res) => {
       exercises: {
         select: {
           alternative1: true, alternative2: true, alternative3: true, alternative4: true,
-          exercise: true, id: true, answered:true, time:true, teacher: {
+          exercise: true, id: true,  time:true, teacher: {
             select: { name: true, image: true }
           }
         }
@@ -53,36 +53,7 @@ app.get("/class/:id", async (req, res) => {
 
 })
 
-app.patch("/exercise/:id", async (req, res)=>{
- const id=Number(req.params.id)
- try{
-  const updatedExercise= await prisma.exercise.update({where: {id}, data: {
-    answered: true
-   }})
 
-   const classId= updatedExercise.classId
-
-   const userClass = await prisma.class.findUnique({
-    where: {id: classId},   
-     include: {
-      exercises: {
-        select: {
-          alternative1: true, alternative2: true, alternative3: true, alternative4: true,
-          exercise: true, id: true, answered:true, time:true, teacher: {
-            select: { name: true, image: true }
-          }
-        }
-      }, pupils: { select: { name: true, image: true } }
-    }
-  })
-
-   res.send(userClass)
- }
- catch (error) {
-  // @ts-ignore
-  res.status(400).send({ errors: [error.message] });
-}
-});
 
 app.post("/exercises", async (req, res) => {
   const { exercise, answer, teacherId, alternative1, alternative2, alternative3, alternative4, classId } = req.body
@@ -128,6 +99,65 @@ app.get("/scores-teacher", async (req, res) => {
     }
   })
 })
+
+
+app.get("/exercise/:id", async(req, res)=>{
+  try{
+    const id=Number(req.params.id)
+    const singleExercise= await prisma.exercise.findUnique({where:{id}})
+    res.send(singleExercise)
+  }
+  catch (error) {
+    // @ts-ignore
+    res.status(400).send({ errors: [error.message] });
+  }
+});
+
+app.post("/answers", async (req, res)=>{
+  try{
+    const {answer, exerciseId, pupilId}=req.body
+
+    const currentAnswer= await prisma.answer.findFirst({where: {exerciseId: exerciseId, AND: {pupilId: pupilId }}})
+    
+    if(currentAnswer){
+      res.status(400).send({ message: "You have already answered this exercise" });
+    }
+    const userAnswer= await prisma.answer.create({
+      data:{
+        answer: answer,
+        exerciseId: exerciseId,
+        pupilId: pupilId
+      }
+    })
+
+    const userAnswers= await prisma.answer.findMany({where: {pupilId: pupilId}, select: {exerciseId}})
+    const matches= userAnswers.map(item=> item.exerciseId)
+    console.log(matches)
+//we need the exercises where the id of the user and the id of the exercise (userId, exerciseId) matches the answer ids
+    
+    const pupil= await prisma.pupil.findUnique({where: {id: pupilId}})
+    const classId= pupil?.classId
+
+    const userClass = await prisma.class.findUnique({
+      where: { id: classId },
+      include: {
+        exercises: { where:  {id: {notIn: matches}}, 
+          select: {
+            alternative1: true, alternative2: true, alternative3: true, alternative4: true,
+            exercise: true, id: true,  time:true, teacher: {
+              select: { name: true, image: true }
+            }
+          }
+        }, pupils: { select: { name: true, image: true } }
+      }
+    })
+    res.send(userClass)   
+  }
+  catch (error) {
+    // @ts-ignore
+    res.status(400).send({ errors: [error.message] });
+  }
+});
 
 //change password for user
 

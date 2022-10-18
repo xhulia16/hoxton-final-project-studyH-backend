@@ -11,23 +11,24 @@ datasource db {
 }
 
 model Class {
-  id       Int        @id @default(autoincrement())
-  name     String
-  pupils   Pupil[]
-  teachers Teacher[]
+  id        Int        @id @default(autoincrement())
+  name      String
+  pupils    Pupil[]
+  teachers  Teacher[]
   exercises Exercise[]
 }
 
 model Pupil {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  password  String
-  image     String
-  score     Int
-  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  classId   Int
-  scores    Scores[]
+  id       Int      @id @default(autoincrement())
+  name     String
+  email    String   @unique
+  password String
+  image    String
+  score    Int
+  class    Class    @relation(fields: [classId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  classId  Int
+  scores   Scores[]
+  answers   Answer[]
 }
 
 model Teacher {
@@ -54,7 +55,7 @@ model Exercise {
   teacherId    Int
   class        Class    @relation(fields: [classId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   classId      Int
-  answered Boolean @default(false)
+  answers       Answer[]
 }
 
 model Scores {
@@ -64,6 +65,16 @@ model Scores {
   pupilId Int
 }
 
+model Answer {
+  id         Int      @id @default(autoincrement())
+  exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  pupil      Pupil    @relation(fields: [pupilId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  answer     String?
+  exerciseId Int
+  pupilId    Int 
+}
+
 // model Message{
 //     id      Int   @id @default(autoincrement())
 // }
+// if user answers we post the answer 
