@@ -27,7 +27,6 @@ model Pupil {
   score    Int
   class    Class    @relation(fields: [classId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   classId  Int
-  scores   Scores[]
   answers   Answer[]
 }
 
@@ -58,12 +57,12 @@ model Exercise {
   answers       Answer[]
 }
 
-model Scores {
-  id      Int   @id @default(autoincrement())
-  score   Int   @default(0)
-  pupil   Pupil @relation(fields: [pupilId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  pupilId Int
-}
+// model Scores {
+//   id      Int   @id @default(autoincrement())
+//   score   Int   @default(0)
+//   pupil   Pupil @relation(fields: [pupilId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+//   pupilId Int @unique
+// }
 
 model Answer {
   id         Int      @id @default(autoincrement())

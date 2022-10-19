@@ -33,7 +33,7 @@ async function getCurrentTeacher(token: string) {
   return user;
 }
 
-//find the class where the pupil belongs to
+
 
 app.get("/class/:id", async (req, res) => {
   const id = Number(req.params.id)
@@ -72,6 +72,32 @@ app.get("/answers/:id", async (req, res)=>{
   }
 });
 
+app.patch("/pupil/:id", async (req, res)=>{
+  try{
+    const {score, exerciseId}=req.body
+    const id= Number(req.params.id)
+  
+    const pupilAnswer= await prisma.answer.findFirst({where: {exerciseId: exerciseId, pupilId: id}})
+    const exercise = await prisma.exercise.findUnique({where:{id: exerciseId}})
+
+    if(pupilAnswer && exercise){
+      if(pupilAnswer.answer.toLowerCase()===exercise.answer.toLowerCase()){
+        const newScore = await prisma.pupil.update({where: {id: id}, data: {
+          score: score
+          }})
+          res.send(newScore)
+      }
+      else res.status(400).send({message: "Answer was not correct!"})
+    }
+    else{
+      res.status(400).send({message: "Pupil or exercise is null!"})
+    }
+  }
+  catch (error) {
+    // @ts-ignore
+    res.status(400).send({ errors: [error.message] })
+  }
+});
 
 
 app.post("/exercises", async (req, res) => {
@@ -92,32 +118,32 @@ app.post("/exercises", async (req, res) => {
 })
 
 
-app.get("/scores-students", async (req, res) => {
-  prisma.scores.findMany({
-    orderBy: { score: "desc" },
-    take: 3,
-    include: {
-      pupil:
-      {
-        select:
-          { id: true, image: true, name: true }
-      }
-    }
-  })
-})
+// app.get("/scores-students", async (req, res) => {
+//   prisma.scores.findMany({
+//     orderBy: { score: "desc" },
+//     take: 3,
+//     include: {
+//       pupil:
+//       {
+//         select:
+//           { id: true, image: true, name: true }
+//       }
+//     }
+//   })
+// })
 
-app.get("/scores-teacher", async (req, res) => {
-  prisma.scores.findMany({
-    orderBy: { score: "desc" },
-    include: {
-      pupil:
-      {
-        select:
-          { id: true, image: true, name: true }
-      }
-    }
-  })
-})
+// app.get("/scores-teacher", async (req, res) => {
+//   prisma.scores.findMany({
+//     orderBy: { score: "desc" },
+//     include: {
+//       pupil:
+//       {
+//         select:
+//           { id: true, image: true, name: true }
+//       }
+//     }
+//   })
+// })
 
 
 app.get("/exercise/:id", async(req, res)=>{
@@ -149,7 +175,6 @@ app.post("/answers", async (req, res)=>{
           pupilId: pupilId
         }
       })
-  
       const userAnswers= await prisma.answer.findMany({where: {pupilId: pupilId}, select: {exerciseId:true}})
       const matches= userAnswers.map(item=> item.exerciseId)
       
