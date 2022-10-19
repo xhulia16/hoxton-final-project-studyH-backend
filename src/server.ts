@@ -113,6 +113,23 @@ app.patch("/pupil/:id", async (req, res)=>{
   }
 });
 
+app.get("/pupil/score/:id", async (req, res)=>{
+  try{
+    const id= Number(req.params.id)
+    const pupil= await prisma.pupil.findUnique({where: {id}, select: {score:true, name:true}})
+    if(pupil){
+     res.send(pupil)
+    }
+    else{
+      res.status(400).send({message: "No pupil found"})
+    }
+  }
+  catch (error) {
+    // @ts-ignore
+    res.status(400).send({ errors: [error.message] });
+  }
+});
+
 
 app.post("/exercises", async (req, res) => {
   const { exercise, answer, teacherId, alternative1, alternative2, alternative3, alternative4, classId } = req.body
