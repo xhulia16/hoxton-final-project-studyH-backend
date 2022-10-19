@@ -85,7 +85,21 @@ app.patch("/pupil/:id", async (req, res)=>{
         const newScore = await prisma.pupil.update({where: {id: id}, data: {
           score: score
           }})
-          res.send(newScore)
+          
+         const pupil= await prisma.pupil.findUnique({where: {id: id}})
+         const classId= pupil?.classId
+          
+          const classScores= await prisma.class.findUnique({where:{id: classId}, select: {pupils: {
+            orderBy: { score: 'desc' },
+            take: 3,
+            select: {
+              name: true, 
+              image: true, 
+              score:true
+            }
+          }}} )
+         
+          res.send(classScores)
       }
       else res.status(400).send({message: "Answer was not correct!"})
     }
@@ -118,19 +132,26 @@ app.post("/exercises", async (req, res) => {
 })
 
 
-// app.get("/scores-students", async (req, res) => {
-//   prisma.scores.findMany({
-//     orderBy: { score: "desc" },
-//     take: 3,
-//     include: {
-//       pupil:
-//       {
-//         select:
-//           { id: true, image: true, name: true }
-//       }
-//     }
-//   })
-// })
+app.get("/scores-students/:id", async (req, res) => {
+  try{
+    const id= Number(req.params.id)
+    const classScores= await prisma.class.findUnique({where:{id:id}, select: {pupils: {
+      orderBy: { score: 'desc' },
+      take: 3,
+      select: {
+        name: true, 
+        image: true, 
+        score:true
+      }
+    }}} )
+   
+    res.send(classScores)
+  }
+  catch (error) {
+    // @ts-ignore
+    res.status(400).send({ errors: [error.message] });
+  }
+});
 
 // app.get("/scores-teacher", async (req, res) => {
 //   prisma.scores.findMany({
