@@ -160,6 +160,17 @@ app.post("/comments", async (req, res)=>{
       pupilId: pupilId, 
       comment: comment
     }})
+
+    const answers= await prisma.answer.findMany({where: {pupilId}, 
+      include:{exercise: 
+        {include: 
+          {
+            teacher:{select: {name:true, image:true}}, 
+            comments:{include: {pupil: {select: {name:true, image:true}}}}
+        
+        }
+        }}})
+    res.send(answers)
   }
   catch (error) {
     // @ts-ignore
