@@ -77,7 +77,15 @@ app.get("/class/:id", async (req, res) => {
 app.get("/answers/:id", async (req, res)=>{
   try{
     const id= Number(req.params.id)
-    const answers= await prisma.answer.findMany({where: {pupilId: id}, include:{exercise: {include: {teacher:{select: {name:true, image:true}}}}}})
+    const answers= await prisma.answer.findMany({where: {pupilId: id}, 
+      include:{exercise: 
+        {include: 
+          {
+            teacher:{select: {name:true, image:true}}, 
+            comments:{include: {pupil: {select: {name:true, image:true}}}}
+        
+        }
+        }}})
     res.send(answers)
   }
   catch (error) {
@@ -143,6 +151,21 @@ app.get("/pupil/score/:id", async (req, res)=>{
   }
 });
 
+
+app.post("/comments", async (req, res)=>{
+  try{
+    const {exerciseId, pupilId, comment}=req.body
+    const newComment= await prisma.comment.create({data: {
+      exerciseId: exerciseId, 
+      pupilId: pupilId, 
+      comment: comment
+    }})
+  }
+  catch (error) {
+    // @ts-ignore
+    res.status(400).send({ errors: [error.message] });
+  }
+});
 
 app.post("/exercises", async (req, res) => {
   try{
