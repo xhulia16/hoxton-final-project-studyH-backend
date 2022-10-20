@@ -36,29 +36,43 @@ async function getCurrentTeacher(token: string) {
 
 
 app.get("/class/:id", async (req, res) => {
-  const id = Number(req.params.id)
-  const pupil= await prisma.pupil.findUnique({where: {id}})
-  const classId= pupil?.classId
-
-  const userAnswers= await prisma.answer.findMany({where: {pupilId: id}, select: {exerciseId:true}})
-  const matches= userAnswers.map(item=> item.exerciseId)
-
-  const userClass = await prisma.class.findUnique({
-    where: { id: classId },
-    include: {
-      exercises:  { where:  {id: {notIn: matches}},
-        select: {
-          alternative1: true, alternative2: true, alternative3: true, alternative4: true,
-          exercise: true, id: true,  time:true, teacher: {
-            select: { name: true, image: true }
+  try{
+    const id = Number(req.params.id)
+    const pupil= await prisma.pupil.findUnique({where: {id}})
+    const classId= pupil?.classId
+  
+    const userAnswers= await prisma.answer.findMany({where: {pupilId: id}, select: {exerciseId:true}})
+    const matches= userAnswers.map(item=> item.exerciseId)
+  
+    const userClass = await prisma.class.findUnique({
+      where: { id: classId },
+      include: {
+        exercises:  { where:  {id: {notIn: matches}},
+          select: {
+            alternative1: true, alternative2: true, alternative3: true, alternative4: true,
+            exercise: true, id: true,  time:true, teacher: {
+              select: { name: true, image: true }
+            }
+          }
+        }, pupils: {
+          orderBy: { score: 'desc' },
+          take: 3,
+          select: {
+            name: true, 
+            image: true, 
+            score:true
           }
         }
-      }, pupils: { select: { name: true, image: true } }
-    }
-  })
-  res.send(userClass)
+      }
+    })
+    res.send(userClass)
+  }
 
-})
+  catch (error) {
+    // @ts-ignore
+    res.status(400).send({ errors: [error.message] });
+  }
+});
 
 app.get("/answers/:id", async (req, res)=>{
   try{
@@ -84,7 +98,7 @@ app.patch("/pupil/:id", async (req, res)=>{
       if(pupilAnswer.answer.toLowerCase()===exercise.answer.toLowerCase()){
         const newScore = await prisma.pupil.update({where: {id: id}, data: {
           score: score
-          }})
+          }})}
           
          const pupil= await prisma.pupil.findUnique({where: {id: id}})
          const classId= pupil?.classId
@@ -100,8 +114,7 @@ app.patch("/pupil/:id", async (req, res)=>{
           }}} )
          
           res.send(classScores)
-      }
-      else res.status(400).send({message: "Answer was not correct!"})
+      
     }
     else{
       res.status(400).send({message: "Pupil or exercise is null!"})
@@ -132,43 +145,50 @@ app.get("/pupil/score/:id", async (req, res)=>{
 
 
 app.post("/exercises", async (req, res) => {
-  const { exercise, answer, teacherId, alternative1, alternative2, alternative3, alternative4, classId } = req.body
-  const newexercise = await prisma.exercise.create({
-    data: {
-      exercise: exercise,
-      answer: answer,
-      teacherId: teacherId,
-      classId: classId,
-      alternative1: alternative1,
-      alternative2: alternative2,
-      alternative3: alternative3,
-      alternative4: alternative4
-    }
-  })
-  res.send(newexercise)
-})
-
-
-app.get("/scores-students/:id", async (req, res) => {
   try{
-    const id= Number(req.params.id)
-    const classScores= await prisma.class.findUnique({where:{id:id}, select: {pupils: {
-      orderBy: { score: 'desc' },
-      take: 3,
-      select: {
-        name: true, 
-        image: true, 
-        score:true
+    const { exercise, answer, teacherId, alternative1, alternative2, alternative3, alternative4, classId } = req.body
+    const newexercise = await prisma.exercise.create({
+      data: {
+        exercise: exercise,
+        answer: answer,
+        teacherId: teacherId,
+        classId: classId,
+        alternative1: alternative1,
+        alternative2: alternative2,
+        alternative3: alternative3,
+        alternative4: alternative4
       }
-    }}} )
-   
-    res.send(classScores)
+    })
+    res.send(newexercise)
   }
+
   catch (error) {
     // @ts-ignore
     res.status(400).send({ errors: [error.message] });
   }
 });
+
+//do i need this??????
+// app.get("/scores-students/:id", async (req, res) => {
+//   try{
+//     const id= Number(req.params.id)
+//     const classScores= await prisma.class.findUnique({where:{id:id}, select: {pupils: {
+//       orderBy: { score: 'desc' },
+//       take: 3,
+//       select: {
+//         name: true, 
+//         image: true, 
+//         score:true
+//       }
+//     }}} )
+   
+//     res.send(classScores)
+//   }
+//   catch (error) {
+//     // @ts-ignore
+//     res.status(400).send({ errors: [error.message] });
+//   }
+// });
 
 // app.get("/scores-teacher", async (req, res) => {
 //   prisma.scores.findMany({
@@ -231,7 +251,15 @@ app.post("/answers", async (req, res)=>{
                 select: { name: true, image: true }
               }
             }
-          }, pupils: { select: { name: true, image: true } }
+          }, pupils: {
+            orderBy: { score: 'desc' },
+            take: 3,
+            select: {
+              name: true, 
+              image: true, 
+              score:true
+            }
+          }
         }
       })
       res.send(userClass)   
@@ -243,8 +271,6 @@ app.post("/answers", async (req, res)=>{
     res.status(400).send({ errors: [error.message] });
   }
 });
-
-
 
 //change password for user
 
