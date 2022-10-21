@@ -11,6 +11,9 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+console.log( require('util'));
+
+
 const port = 5000;
 
 const SECRET = "ABC";
@@ -29,10 +32,59 @@ async function getCurrentPupil(token: string) {
 async function getCurrentTeacher(token: string) {
   // @ts-ignore
   const { id } = jwt.verify(token, SECRET);
-  const user = await prisma.teacher.findUnique({ where: { id: id }, include: { class: { include: { pupils: { select: { name: true, image: true, id: true } } } } } });
+  const user = await prisma.teacher.findUnique({
+    where: { id: id }, include:
+    {
+      class: {
+        include:
+        {
+          pupils:
+            { select: { name: true, image: true, id: true, answers: { select: { answer: true } } } }
+        }
+      }
+    }
+  });
   return user;
 }
 
+
+app.get("/messages/pupil/:id", async (req, res) => {
+  try {
+    //get messages between two people 
+    const id = Number(req.params.id)
+
+    const {user}=req.query
+
+      const userId = Number(user)
+      const messages = await prisma.dm.findMany({
+        where: { OR: [{  senderId: id ,recieverId: userId}, { senderId: userId, recieverId: id }] }
+        , orderBy: { time: 'asc' }, 
+        include: {sender: {select: {name:true, image:true}}, reciever: {select: {name:true, image:true}}}
+      })
+      res.send(messages)
+
+  }
+  catch (error) {
+    // @ts-ignore
+    res.status(400).send({ errors: [error.message] });
+  }
+});
+
+app.post("/messages", async (req, res)=>{
+  try{
+   const {message, recieverId, senderId}=req.body
+const newMessage= await prisma.dm.create({data: {
+  message: message, 
+  recieverId: recieverId, 
+  senderId: senderId
+}})
+res.send(newMessage)
+  }
+  catch (error) {
+    // @ts-ignore
+    res.status(400).send({ errors: [error.message] });
+  }
+});
 
 
 app.get("/class/:id", async (req, res) => {
@@ -84,13 +136,14 @@ app.get("/class/teacher/:id", async (req, res) => {
     const userClass = await prisma.class.findUnique({
       where: { id: classId },
       include: {
-        exercises: {include: {answers:true}},
-         pupils: {
+        exercises: { include: { answers: { include: { pupil: { select: { name: true, image: true } } } } } },
+        pupils: {
           orderBy: { score: 'desc' },
           select: {
             name: true,
             image: true,
-            score: true
+            score: true,
+            answers: { select: { answer: true } }
           }
         }
       }
@@ -251,41 +304,6 @@ app.post("/exercises", async (req, res) => {
   }
 });
 
-//do i need this??????
-// app.get("/scores-students/:id", async (req, res) => {
-//   try{
-//     const id= Number(req.params.id)
-//     const classScores= await prisma.class.findUnique({where:{id:id}, select: {pupils: {
-//       orderBy: { score: 'desc' },
-//       take: 3,
-//       select: {
-//         name: true, 
-//         image: true, 
-//         score:true
-//       }
-//     }}} )
-
-//     res.send(classScores)
-//   }
-//   catch (error) {
-//     // @ts-ignore
-//     res.status(400).send({ errors: [error.message] });
-//   }
-// });
-
-// app.get("/scores-teacher", async (req, res) => {
-//   prisma.scores.findMany({
-//     orderBy: { score: "desc" },
-//     include: {
-//       pupil:
-//       {
-//         select:
-//           { id: true, image: true, name: true }
-//       }
-//     }
-//   })
-// })
-
 
 app.get("/exercise/:id", async (req, res) => {
   try {
@@ -368,7 +386,6 @@ app.patch("/teacher/:id", async (req, res) => {
 });
 
 
-//
 
 app.post("/sign-in/teacher", async (req, res) => {
 

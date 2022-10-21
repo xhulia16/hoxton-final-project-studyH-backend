@@ -19,16 +19,18 @@ model Class {
 }
 
 model Pupil {
-  id       Int       @id @default(autoincrement())
-  name     String
-  email    String    @unique
-  password String
-  image    String
-  score    Int
-  class    Class     @relation(fields: [classId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  classId  Int
-  answers  Answer[]
-  comments Comment[]
+  id               Int       @id @default(autoincrement())
+  name             String
+  email            String    @unique
+  password         String
+  image            String
+  score            Int
+  class            Class     @relation(fields: [classId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  classId          Int
+  answers          Answer[]
+  comments         Comment[]
+  sentMessages     Dm[]      @relation("sender")
+  recievedMessages Dm[]      @relation("reciever")
 }
 
 model Teacher {
@@ -61,8 +63,8 @@ model Exercise {
 
 model Comment {
   id         Int      @id @default(autoincrement())
-  pupil      Pupil    @relation(fields: [pupilId], references: [id],  onDelete: Cascade, onUpdate: Cascade)
-  exercise   Exercise @relation(fields: [exerciseId], references: [id],  onDelete: Cascade, onUpdate: Cascade)
+  pupil      Pupil    @relation(fields: [pupilId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   comment    String
   pupilId    Int
   exerciseId Int
@@ -77,7 +79,12 @@ model Answer {
   pupilId    Int
 }
 
-// model Message{
-//     id      Int   @id @default(autoincrement())
-// }
-// if user answers we post the answer 
+model Dm{
+  id         Int    @id @default(autoincrement())
+  message    String
+  sender     Pupil  @relation(name: "sender", fields: [senderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  senderId   Int
+  reciever   Pupil  @relation(name: "reciever", fields: [recieverId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  recieverId Int
+  time DateTime @default(now())
+}
