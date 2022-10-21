@@ -295,7 +295,23 @@ app.post("/exercises", async (req, res) => {
         alternative4: alternative4
       }
     })
-    res.send(newexercise)
+
+    const userClass = await prisma.class.findUnique({
+      where: { id: classId },
+      include: {
+        exercises: { include: { answers: { include: { pupil: { select: { name: true, image: true } } } } } },
+        pupils: {
+          orderBy: { score: 'desc' },
+          select: {
+            name: true,
+            image: true,
+            score: true,
+            answers: { select: { answer: true } }
+          }
+        }
+      }
+    })
+    res.send(userClass)
   }
 
   catch (error) {
