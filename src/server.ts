@@ -11,7 +11,7 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-console.log( require('util'));
+console.log(require('util'));
 
 
 const port = 5000;
@@ -53,15 +53,15 @@ app.get("/messages/pupil/:id", async (req, res) => {
     //get messages between two people 
     const id = Number(req.params.id)
 
-    const {user}=req.query
+    const { user } = req.query
 
-      const userId = Number(user)
-      const messages = await prisma.dm.findMany({
-        where: { OR: [{  senderId: id ,recieverId: userId}, { senderId: userId, recieverId: id }] }
-        , orderBy: { time: 'asc' }, 
-        include: {sender: {select: {name:true, image:true}}, reciever: {select: {name:true, image:true}}}
-      })
-      res.send(messages)
+    const userId = Number(user)
+    const messages = await prisma.dm.findMany({
+      where: { OR: [{ senderId: id, recieverId: userId }, { senderId: userId, recieverId: id }] }
+      , orderBy: { time: 'asc' },
+      include: { sender: { select: { name: true, image: true } }, reciever: { select: { name: true, image: true } } }
+    })
+    res.send(messages)
 
   }
   catch (error) {
@@ -70,15 +70,17 @@ app.get("/messages/pupil/:id", async (req, res) => {
   }
 });
 
-app.post("/messages", async (req, res)=>{
-  try{
-   const {message, recieverId, senderId}=req.body
-const newMessage= await prisma.dm.create({data: {
-  message: message, 
-  recieverId: recieverId, 
-  senderId: senderId
-}})
-res.send(newMessage)
+app.post("/messages", async (req, res) => {
+  try {
+    const { message, recieverId, senderId } = req.body
+    const newMessage = await prisma.dm.create({
+      data: {
+        message: message,
+        recieverId: recieverId,
+        senderId: senderId
+      }
+    })
+    res.send(newMessage)
   }
   catch (error) {
     // @ts-ignore
@@ -391,7 +393,6 @@ app.post("/answers", async (req, res) => {
 });
 
 //change password for user
-
 app.patch("/teacher/:id", async (req, res) => {
   const id = Number(req.params.id);
   const passChanged = await prisma.pupil.update({
@@ -402,12 +403,10 @@ app.patch("/teacher/:id", async (req, res) => {
 });
 
 
-
 app.post("/sign-in/teacher", async (req, res) => {
 
-  const { email, password } = req.body
-
   try {
+    const { email, password } = req.body
 
     const errors: string[] = []
 
@@ -431,7 +430,7 @@ app.post("/sign-in/teacher", async (req, res) => {
     if (user && bcrypt.compareSync(req.body.password, user.password)) {
       res.send({ user: user, token: getToken(user.id) });
     } else {
-      res.status(400).send({ errors: ['Username/password invalid.'] })
+      res.status(400).send({ errors: ['There is no teacher with these credentials'] })
     }
   } catch (error) {
     // @ts-ignore
@@ -441,14 +440,33 @@ app.post("/sign-in/teacher", async (req, res) => {
 
 app.post("/sign-in/pupil", async (req, res) => {
   try {
+
+    const { email, password } = req.body
+
+
+    const errors: string[] = []
+
+    if (typeof email !== "string") {
+      errors.push("Email missing or not a string")
+    }
+
+    if (typeof password !== "string") {
+      errors.push("Password missing or not a string")
+    }
+
+    if(errors.length>0){
+      res.status(400).send({errors})
+      return
+    }
+
     const user = await prisma.pupil.findUnique({
-      where: { email: req.body.email }, include: { class: { include: { pupils: { select: { image: true, id: true, name: true } } } } }
+      where: { email }, include: { class: { include: { pupils: { select: { image: true, id: true, name: true } } } } }
     });
 
     if (user && bcrypt.compareSync(req.body.password, user.password)) {
       res.send({ user: user, token: getToken(user.id) });
     } else {
-      res.status(400).send({ message: "User did not log in" });
+      res.status(400).send({ errors: ["There is no pupil with these credentials"] });
     }
   } catch (error) {
     // @ts-ignore
